@@ -1,16 +1,18 @@
-FROM python:3.13
-WORKDIR /usr/local/app
+FROM node:20-alpine
+RUN apk add --no-cache openssl
 
-# Install the application dependencies
-COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+EXPOSE 3000
 
-# Copy in the source code
-COPY src ./src
-EXPOSE 8080
+WORKDIR /app
 
-# Setup an app user so the container doesn't run as the root user
-RUN useradd app
-USER app
+ENV NODE_ENV=production
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]
+COPY package.json package-lock.json* ./
+
+RUN npm ci --omit=dev && npm cache clean --force
+
+COPY . .
+
+RUN npm run build
+
+CMD ["npm", "run", "docker-start"]
